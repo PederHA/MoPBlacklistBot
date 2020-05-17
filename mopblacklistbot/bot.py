@@ -137,6 +137,9 @@ async def generate_blacklist() -> None:
         # Fail silently if parse fails (yeah, that's bad)
         try:
             name = await parse_message(message)
+        except:
+            continue
+        else:
             if name:
                 if name.is_guild:
                     if (
@@ -150,8 +153,6 @@ async def generate_blacklist() -> None:
                         and name.name not in blacklist["players"]
                     ):
                         blacklist["players"].append(name.name)
-        except:
-            pass
     
     if not blacklist:
         raise ValueError(
