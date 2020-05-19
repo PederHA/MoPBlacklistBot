@@ -6,20 +6,20 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import discord
-
 from discord.ext.commands import Bot
+
+from ._types import BlacklistType, PathLike
+from .weakaura import modify_weakaura
 
 
 BLACKLIST_PATH = "blacklist.json"
 IGNORE_PATH = "blacklistignore.json"
 CHECKPOINT_PATH = "lastmsg.txt"
-CHANNEL_ID = 710922894871625759
-TOKEN = ""
+SV_PATH = ""
+CHANNEL_ID = 0
+
 
 bot = Bot(command_prefix="$", description="Tauri Blacklist Bot")
-
-
-BlacklistType = Dict[str, List[Optional[str]]]
 
 
 @dataclass
@@ -32,8 +32,8 @@ class Name:
 
 def check_blacklist(blacklist: BlacklistType) -> None:
     if (
-        not isinstance(ignore, dict) 
-        and not all(k in ignore for k in ["players", "guilds"])
+        not isinstance(blacklist, dict) 
+        and not all(k in blacklist for k in ["players", "guilds"])
     ):
         raise json.JSONDecodeError # a little too cheeky maybe
 
@@ -71,7 +71,7 @@ def load_blacklist() -> BlacklistType:
 
 def save_blacklist(blacklist: List[str]) -> None:
     try:
-        bl = json.dumps(blacklist, indent=4)
+        bl = json.dumps(blacklist, indent=4, ensure_ascii=False)
     except:
         print("Unable to serialize blacklist.") # TODO: log
         exit(1)
@@ -119,7 +119,7 @@ async def parse_message(message: discord.Message) -> Optional[Name]:
     #       Save if wildcard
 
 
-async def generate_blacklist() -> None:
+async def generate_blacklist() -> BlacklistType:
     """This function is a little too long. Could be broken up."""
     channel = bot.get_channel(CHANNEL_ID)
     if not channel:
@@ -167,14 +167,21 @@ async def generate_blacklist() -> None:
         
     save_blacklist(blacklist)
 
+    return blacklist
+
     
 @bot.listen()
 async def on_ready() -> None:
     try:
-        await generate_blacklist()
+        blacklist = await generate_blacklist()
+        modify_weakaura(blacklist, SV_PATH)
     finally:
         exit(1)
 
 
-def run():
-    bot.run(TOKEN or os.environ.get("TBLBOTKEY"))
+def run(channel_id: int, sv_path: PathLike, bot_token: str=None):
+    global CHANNEL_ID
+    global SV_PATH
+    SV_PATH = sv_path
+    CHANNEL_ID = channel_id
+    bot.run(bot_token or os.environ.get("TBLBOTKEY"))
