@@ -52,7 +52,7 @@ def get_blacklist_str(blacklist: List[str]) -> str:
     return (
         "local MoPBlacklist = {\\n" + 
         ",\\n".join([f'    \\"{b}\\"' for b in blacklist]) + 
-        "}"
+        "  \\n}"
     )
 
 
