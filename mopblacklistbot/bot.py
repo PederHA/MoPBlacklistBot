@@ -164,7 +164,11 @@ async def generate_blacklist() -> BlacklistType:
     except UnboundLocalError:
         pass # if iterator is never entered (due to no new messages since last checkpoint), 
              # there will be no variable named "message"
-        
+    
+    # Quick and dirty hack to remove duplicates
+    blacklist["players"] = list(set(blacklist["players"]))    
+    blacklist["guilds"] = list(set(blacklist["guilds"]))    
+    
     save_blacklist(blacklist)
 
     return blacklist
@@ -185,3 +189,5 @@ def run(channel_id: int, sv_path: PathLike, bot_token: str=None):
     SV_PATH = sv_path
     CHANNEL_ID = channel_id
     bot.run(bot_token or os.environ.get("TBLBOTKEY"))
+
+
