@@ -16,17 +16,15 @@ def modify_weakaura(blacklist: BlacklistType, sv_path: Union[str, Path]) -> None
     _check_wa_savedvars_path(path)
 
     sv = load_wa_savedvars(path) # Get WeakAuras.lua as a string
-    
-    # NOTE! Only adds blacklisted players currently.
-    bl = get_blacklist_str(blacklist["players"])
 
     start = sv.find("local MoPBlacklist = {")
-    stop = sv.find("}", start)
-    s = f"{sv[:start]}{bl}{sv[stop+1:]}"
+    stop = start
+    for _ in range(3):
+        stop = sv.find("}", stop+1)
+    s = f"{sv[:start]}{get_blacklist_str(blacklist)}{sv[stop+1:]}"
 
     save_wa_savedvars(path, s)
     
-
 
 def _check_savedvars_path(path: Path) -> None:
     if not path.exists():
@@ -48,12 +46,25 @@ def _check_wa_savedvars_path(path: Path) -> None:
         )
 
 
-def get_blacklist_str(blacklist: List[str]) -> str:
-    return (
-        "local MoPBlacklist = {\\n" + 
-        ",\\n".join([f'    \\"{b}\\"' for b in blacklist]) + 
-        "  \\n}"
-    )
+def get_blacklist_str(blacklist: BlacklistType) -> str:
+    def _iter_items(l: List[str]) -> str:
+        return ",\\n".join([f'      \\"{b}\\"' for b in l])
+    
+    s = "local MoPBlacklist = {"
+
+    # Add players
+    s += '\\n    [\\"players\\"] = {\\n'
+    s += _iter_items(blacklist["players"])
+    s += "\\n    },\\n"
+
+    # Add guilds
+    s += '    [\\"guilds\\"] = {\\n'
+    s += _iter_items(blacklist["guilds"])
+    s += "\\n    }\\n"
+
+    s+= "\\n  }"
+
+    return s
 
 
 def load_wa_savedvars(path: Path) -> str:
